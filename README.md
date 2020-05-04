@@ -1,20 +1,32 @@
 tekton-playground
 ===
 
+# Create Kubernetes Cluster
+
+Current version sets need kubernetes version >= v1.17.0 (ex. current rapid release channel: 1.17.4-gke.10).
+
+```
+kind create cluster
+
+terrform plan
+```
+
+# Install Tekton
+
 Install Tekton Pipeline
 
 ```
-kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
-```
+PIPELINE_VERSION=v0.12.0
 
-Install Tekton Trigger
-```
-kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
-```
+kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/previous/$PIPELINE_VERSION/release.yaml
 
-Install Tekton Dashboard
-```
-kubectl apply --filename https://github.com/tektoncd/dashboard/releases/download/v0.6.1/tekton-dashboard-release.yaml
+TRIGGER_VERSION=v0.4.0
+
+kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/previous/$TRIGGER_VERSION/release.yaml
+
+DASHBOARD_VERSION=v0.6.0
+
+kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/previous/$DASHBOARD_VERSION/tekton-dashboard-release.yaml
 ```
 
 ```
@@ -22,4 +34,14 @@ kubectl --namespace tekton-pipelines get pods,svc
 kubectl --namespace tekton-pipelines port-forward svc/tekton-dashboard 9097:9097
 
 open "https://localhost:9097"
+```
+
+### Install Traefik
+
+```
+helm repo add traefik https://containous.github.io/traefik-helm-chart
+helm update
+helm install --namespace=tekton-pipelines traefik traefik/traefik
+
+kubectl apply -f ingress.yaml
 ```
