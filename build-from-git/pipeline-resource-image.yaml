@@ -1,0 +1,10 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: tekton-playground-image
+spec:
+  type: image
+  params:
+    - name: url
+      value: chechiachang/tekton-playground
+      #value: gcr.io/gke-playground-0423/tekton-playground
