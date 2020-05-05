@@ -1,16 +1,16 @@
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
+kind: Ingress
+apiVersion: networking.k8s.io/v1beta1
 metadata:
   name: tekton-dashboard
   namespace: tekton-pipelines
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
 spec:
-  entryPoints:
-    - web
-  routes:
-    - match: HostRegexp(`.*.ddns.net`)
-      kind: Rule
-      services:
-        - kind: Service
-          name: tekton-dashboard
-          namespace: tekton-pipelines
-          port: 9097
+  rules:
+  - host: tektontest.ddns.net
+    http:
+      paths:
+      - path: /
+        backend:
+           serviceName: tekton-dashboard
+           servicePort: 9097

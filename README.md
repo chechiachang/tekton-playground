@@ -39,9 +39,9 @@ open "https://localhost:9097"
 ### Install Traefik
 
 ```
-helm repo add traefik https://containous.github.io/traefik-helm-chart
+helm repo add nginx-stable https://helm.nginx.com/stable
 helm update
-helm install --namespace=tekton-pipelines traefik traefik/traefik
+helm install --namespace tekton-pipelines nginx nginx-stable/nginx-ingress
 
 kubectl apply -f ingress.yaml
 ```
