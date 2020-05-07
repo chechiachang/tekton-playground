@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
   name: tekton-playground-image
+  namespace: tekton-pipelines
 spec:
   type: image
   params:

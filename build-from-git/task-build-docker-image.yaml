@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: build-docker-image-from-git-source
+  namespace: tekton-pipelines
 spec:
   params:
     - name: pathToDockerFile

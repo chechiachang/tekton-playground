@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: build-docker-image-from-git-source-task-run
+  namespace: tekton-pipelines
 spec:
   serviceAccountName: tekton-service
   taskRef:

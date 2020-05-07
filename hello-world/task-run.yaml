@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: echo-hello-world-task-run
+  namespace: tekton-pipelines
 spec:
   taskRef:
     name: echo-hello-world
