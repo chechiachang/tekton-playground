@@ -1,0 +1,50 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: gitlab-merge-request-comment
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: project-id
+      description: id of gitlab project
+    - name: merge-request-iid
+      description: id of merge request to add comment to
+    - name: gitlab-secret
+      description: the secret name for gitlab access token secret
+    - name: gitlab-secret-key
+      description: the key name for gitlab-secret-name.data.key
+    - name: terraform-plan-output
+      default: output.plan
+  workspaces:
+    - name: git-repo
+      mountPath: /workspace/git-repo
+  steps:
+    - name: gitlab-merge-request-comment
+      image: alpine/git
+      script: |
+        #!/bin/sh
+        set -xe
+
+        apk update && apk add jq curl
+
+        function send_comment() {
+          cd "$(workspaces.git-repo.path)/${1}"
+
+          jq -n --arg msg "$(cat $(params.terraform-plan-output))" '{id: $(params.project-id), merge_request_iid: $(params.merge-request-iid), body: $msg}' > payload.json
+          cat payload.json
+
+          curl -X POST \
+            --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data @payload.json \
+            https://gitlab.chechia.com.tw/api/v4/projects/$(params.project-id)/merge_requests/$(params.merge-request-iid)/notes
+        }
+
+        send_comment "gcp/myproject"
+
+      env:
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.gitlab-secret)
+              key: $(params.gitlab-secret-key)

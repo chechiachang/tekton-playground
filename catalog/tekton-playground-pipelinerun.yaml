@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: manual-tekton-cd-
+  namespace: tekton-pipelines
+spec:
+  pipelineRef:
+    name: tekton-cd
+  params:
+    - name: git-ref
+      value: "my-feature-branch"                          # lastet commit on branch
+      # value: "refs/heads/master"                        # master & deploy
+      # value: "refs/tags/0.0.3"                          # tagged commit
+      # value: "0.0.3"                                    # tagged commit
+      # value: "5cc173747ee63814cd74b32b17e385608daf813d" # commit
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+          resources:
+            requests:
+              storage: 500Mi
+              #storage: 1Gi

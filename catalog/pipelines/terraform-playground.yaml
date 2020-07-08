@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: terraform-infra
+  namespace: tekton-pipelines
+spec:
+  workspaces:
+    - name: shared-workspace
+  params:
+    - name: git-ref
+
+  tasks:
+
+    - name: generic-git-clone
+      taskRef:
+        name: generic-git-clone
+      params:
+        - name: url
+          value: https://github.com/chechiachang/terraform-playground.git
+        - name: revision
+          value: "$(params.git-ref)"
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+
+    - name: terraform-plan
+      taskRef:
+        name: terraform-plan
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+      runAfter:
+        - generic-git-clone
+
+    # Disable terraform apply (Auto apply could be dangerous!)
+    #- conditions:
+    #    - conditionRef: "is-match-regex" # Only apply if is valid tag
+    #      params:
+    #        - name: string
+    #          value: "$(params.git-ref)"
+    #        - name: regex
+    #          value: '^refs/tags/[0-9]*\.[0-9]*\.[0-9]*$'
+    #          # refs/tags/0.12.345
+    #  name: terraform-apply
+    #  taskRef:
+    #    name: terraform-apply
+    #  params:
+    #  workspaces:
+    #    - name: git-repo
+    #      workspace: shared-workspace
+    #  runAfter:
+    #    - terraform-plan

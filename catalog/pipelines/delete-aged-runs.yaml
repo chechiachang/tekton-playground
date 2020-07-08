@@ -1,0 +1,15 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: housekeeper
+  namespace: tekton-pipelines
+spec:
+  params:
+  resources:
+
+  tasks:
+    - name: delete-aged-runs
+      taskRef:
+        name: delete-aged-runs
+      params:
+      resources:

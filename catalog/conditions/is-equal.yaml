@@ -1,0 +1,13 @@
+# TODO add reg expression to match git-tag
+apiVersion: tekton.dev/v1alpha1
+kind: Condition
+metadata:
+  name: is-equal
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: variable
+    - name: compare
+  check:
+    image: alpine
+    script: 'test $(params.variable) = $(params.compare)'

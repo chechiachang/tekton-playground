@@ -1,0 +1,30 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: terraform-playground
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: git-ref
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: terraform-playground-
+        namespace: tekton-pipelines
+      spec:
+        pipelineRef:
+          name: terraform-playground
+        params:
+          - name: git-ref
+            value: "$(params.git-ref)"
+        resources:
+        workspaces:
+          - name: shared-workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+                resources:
+                  requests:
+                    storage: 1Gi

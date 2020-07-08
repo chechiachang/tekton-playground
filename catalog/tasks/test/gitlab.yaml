@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: gitlab-merge-request-comment-
+  namespace: tekton-pipelines
+spec:
+  taskRef:
+    name: gitlab-merge-request-comment
+    params:
+      - name: project-id
+        value: 686
+      - name: merge-request-iid
+        value: 17
+      - name: gitlab-secret
+        value: gitlab-access-token
+      - name: gitlab-secret-key
+        value: access-token
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+          resources:
+            requests:
+              storage: 500Mi
+              #storage: 1Gi

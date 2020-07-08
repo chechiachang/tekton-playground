@@ -1,0 +1,83 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: terraform-plan
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: terraform-plan-output
+      default: output.plan
+  workspaces:
+    - name: git-repo
+      mountPath: /workspace/git-repo
+  steps:
+    - name: terraform-plan
+      image: hashicorp/terraform:0.12.28
+      script: |
+        #!/usr/bin/env sh
+        set -xe
+
+        apk update && apk add jq
+
+        function terraform_plan() {
+          cd "$(workspaces.git-repo.path)/${1}"
+          echo "credential_json = /var/secret/${2}" >> terraform.auto.tfvars # Overwrite variables
+
+          terraform init
+          terraform state pull
+          terraform plan -compact-warnings | tee "$(params.terraform-plan-output)"
+        }
+
+        terraform_plan "gcp/myproject" "myproject-5db81ab0f6ac.json"
+
+      volumeMounts:
+        - name: &service-account-volume service-account-volume
+          mountPath: /var/secret
+  volumes:
+    - name: *service-account-volume
+      secret:
+        secretName: gcp-credentials
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: terraform-apply
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: subdirectory
+      description: project subdirectory to tun terraform
+      default: gcp/myproject
+    - name: credential
+      description: credential file to run terraform
+      default: myproject-5db81ab0f6ac.json # terraform-infra
+  workspaces:
+    - name: git-repo
+      mountPath: /workspace/git-repo
+  steps:
+    - name: terraform-apply
+      image: hashicorp/terraform:0.12.28
+      script: |
+        #!/usr/bin/env sh
+        set -xe
+
+        function terraform_apply() {
+          cd "$(workspaces.git-repo.path)/${1}"
+          echo "credential_json = /var/secret/${2}" >> terraform.auto.tfvars # Overwrite variables
+
+          terraform init
+          terraform state pull
+          terraform plan -compact-warnings
+          # terraform apply -auto-approve # FIXME !DANGER! Diable apply for safety issue
+        }
+
+        # myproject
+        terraform_apply "gcp/myproject" "myproject-5db81ab0f6ac.json" # FIXME better why to map project with credential
+
+      volumeMounts:
+        - name: &service-account-volume service-account-volume
+          mountPath: /var/secret
+  volumes:
+    - name: *service-account-volume
+      secret:
+        secretName: gcp-credentials

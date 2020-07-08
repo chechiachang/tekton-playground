@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: tekton-playground-git-clone-
+  namespace: tekton-pipelines
+spec:
+  resources:
+    inputs:
+      - name: git-repo
+        resourceRef:
+          name: tekton-cd-git
+  taskRef:
+    name: git-clone

@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Condition
+metadata:
+  name: is-match-regex
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: string
+    - name: regex
+  check:
+    image: alpine
+    script: 'expr "$(params.string)" : "$(params.regex)"'

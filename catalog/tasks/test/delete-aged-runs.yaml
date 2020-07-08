@@ -1,0 +1,8 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: delete-aged-runs-
+  namespace: tekton-pipelines
+spec:
+  taskRef:
+    name: delete-aged-runs

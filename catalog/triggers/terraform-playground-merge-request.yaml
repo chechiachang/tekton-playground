@@ -1,0 +1,45 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: terraform-playground-merge-request
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: project-id # 664
+    - name: merge-request-iid # 35
+    - name: git-source-branch # "gitlab-integration-api-comment"
+    - name: git-target-branch # "master"
+    - name: git-merge-request-url # https://gitlab.chechia.com.tw/team_devops/terraform-playground/merge_requests/26"
+    - name: git-commit-author # Che Chia Chang
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: terraform-playground-merge-request-
+        namespace: tekton-pipelines
+      spec:
+        pipelineRef:
+          name: terraform-playground-merge-request
+        params:
+          - name: project-id
+            value: "$(params.project-id)"
+          - name: merge-request-iid
+            value: "$(params.merge-request-iid)"
+          - name: git-source-branch
+            value: "$(params.git-source-branch)"
+          - name: git-target-branch
+            value: "$(params.git-target-branch)"
+          - name: git-merge-request-url
+            value: "$(params.git-merge-request-url)"
+          - name: git-commit-author
+            value: "$(params.git-commit-author)"
+        resources:
+        workspaces:
+          - name: shared-workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+                resources:
+                  requests:
+                    storage: 1Gi

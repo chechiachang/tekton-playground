@@ -1,0 +1,87 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: gitlab 
+  namespace: tekton-pipelines
+spec:
+  params: # Body size is too large for params. Parse body here.
+    - name: git-revision
+      value: $(body.checkout_sha)
+    - name: git-repository-url
+      value: $(body.repository.git_http_url)
+    - name: git-ref
+      value: $(body.ref)
+    - name: git-header
+      value: $(header)
+---
+# https://gitlab.chechia.com.tw/team_devops/tekton-playground/hooks/8/hook_logs/1738
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: gitlab-merge-request
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: project-id # 664
+      value: $(body.project.id)
+    - name: merge-request-iid # 35
+      value: $(body.object_attributes.iid)
+    - name: git-source-branch # "gitlab-integration-api-comment"
+      value: $(body.object_attributes.source_branch)
+    - name: git-target-branch # "master"
+      value: $(body.object_attributes.target_branch)
+    - name: git-merge-request-url # https://gitlab.chechia.com.tw/team_devops/terraform-playground/merge_requests/26"
+      value: $(body.object_attributes.url)
+    - name: git-commit-author # Che Chia Chang
+      value: $(body.object_attributes.last_commit.author.name)
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: gitlab-listener # NOTE: Effect service routing (Pod name, Service name...)
+  namespace: tekton-pipelines
+spec:
+  serviceAccountName: tekton-gitlab-triggers
+  triggers:
+
+    - name: gitlab-tekton-playground-push
+      interceptors:
+        - cel:
+            # event == Push / Tag Push
+            # repo  == tekton-cd 
+            # Push has after commit (not branch deleted push)
+            filter: "( header.match('X-Gitlab-Event', 'Push Hook') || header.match('X-Gitlab-Event', 'Tag Push Hook') )
+            && body.repository.name == 'tekton-playground' && body.after != '0000000000000000000000000000000000000000'"
+      bindings:
+        - name: gitlab
+      template:
+        name: tekton-playground
+
+    - name: gitlab-terraform-playground-push
+      interceptors:
+        - cel:
+            filter: "( header.match('X-Gitlab-Event', 'Push Hook') || header.match('X-Gitlab-Event', 'Tag Push Hook') )
+            && body.repository.name == 'terraform-playground' && body.after != '0000000000000000000000000000000000000000'"
+      bindings:
+        - name: gitlab
+      template:
+        name: terraform-playground
+
+    - name: gitlab-terraform-playground-merge-request
+      interceptors:
+        - cel:
+            filter: "( header.match('X-Gitlab-Event', 'Merge Request Hook')) && body.project.name == 'terraform-playground' && body.object_attributes.state == 'opened'"
+      bindings:
+        - name: gitlab-merge-request
+      template:
+        name: terraform-playground-merge-request
+
+    - name: gitlab-myproject-kpt-push
+      interceptors:
+        - cel:
+            filter: "( header.match('X-Gitlab-Event', 'Tag Push Hook') )
+            && body.repository.name == 'myproject-kpt' && body.after != '0000000000000000000000000000000000000000'"
+      bindings:
+        - name: gitlab
+      template:
+        name: myproject-deploy

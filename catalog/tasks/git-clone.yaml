@@ -1,0 +1,47 @@
+# Deprecated: git repo is readonly across tasks in a pipeline
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-clone
+  namespace: tekton-pipelines
+  annotation:
+    description: Clone source from Git and print event information
+spec:
+  params:
+    - name: git-ref
+  resources:
+    inputs:
+      - name: git-repo
+        type: git
+    outputs:
+      - name: git-repo
+        type: git
+  results:
+    - description: /tmp/output
+      name: changed-files
+  steps:
+    - name: config
+      image: alpine/git
+      script: |
+        #!/bin/sh
+        set -xe
+        pwd
+        # echo "$(workspaces.workspace.path)"
+        echo "$(resources.inputs.git-repo.path)"
+        # cat /workspace/git-repo/README.md
+        # ls /workspace/git-repo
+        # echo "$(resources.inputs.git-repo.url)" # url from resources
+        echo "Git Event Info:"
+        echo "Ref:      $(params.git-ref)"
+
+        cd "$(resources.inputs.git-repo.path)"
+        git fetch
+        ref="$(params.git-ref)"
+        git checkout --track origin/${ref#refs/heads/} # checkout branch
+
+        # Send changed files to results.changed-files if not master
+        if [ $(params.git-ref) = 'refs/heads/master' ]; then
+          exit 0
+        else
+          git --no-pager diff --name-only HEAD origin/master | tr '\n' ' ' | tee $(results.changed-files.path)
+        fi

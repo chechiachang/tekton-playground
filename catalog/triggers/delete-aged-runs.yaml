@@ -1,0 +1,17 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: housekeeper
+  namespace: tekton-pipelines
+spec:
+  params:
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: housekeeper-
+      spec:
+        pipelineRef:
+          name: housekeeper
+        params:
+        resources:

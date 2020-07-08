@@ -1,0 +1,67 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: example-cat-readme
+  namespace: tekton-pipelines
+spec:
+  resources:
+    - name: git-repo
+      type: git
+  params:
+    - name: git-ref
+
+  tasks:
+
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: git-ref
+          value: "$(params.git-ref)"
+      resources:
+        inputs:
+          - name: git-repo
+            resource: git-repo
+        outputs:
+          - name: git-repo
+            resource: git-repo
+
+    - name: exaple
+      conditions:
+        - conditionRef: "is-match-regex" # Plan if changed files match path: gcp/myproject
+          params:
+            - name: string
+              value: $(tasks.git-clone.results.changed-files)
+            - name: regex
+              value: gcp/myproject
+      taskRef:
+        name: cat-readme
+      params:
+      resources:
+        inputs:
+          - name: git-repo
+            resource: git-repo
+        outputs:
+          - name: git-repo
+            resource: git-repo
+      runAfter:
+        - git-clone
+
+    # Almost working :(
+    #- name: gitlab-merge-request-comment
+    #  taskRef:
+    #    name: gitlab-merge-request-comment
+    #  params:
+    #    - name: project-id # 664
+    #      value: "$(params.project-id)"
+    #    - name: merge-request-iid # 35
+    #      value: "$(params.merge-request-iid)"
+    #    - name: gitlab-secret
+    #      value: gitlab-access-token
+    #    - name: gitlab-secret-key
+    #      value: access-token
+    #  workspaces:
+    #    - name: git-repo
+    #      workspace: shared-workspace
+    #  runAfter:
+    #    - terraform-plan

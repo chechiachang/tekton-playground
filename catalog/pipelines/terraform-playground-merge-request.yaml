@@ -1,0 +1,58 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: terraform-infra-merge-request
+  namespace: tekton-pipelines
+spec:
+  workspaces:
+    - name: shared-workspace
+  params:
+    - name: project-id            # 664
+    - name: merge-request-iid     # 35
+    - name: git-source-branch     # "github-integration-api-comment"
+    - name: git-target-branch     # "master"
+    - name: git-merge-request-url # https://github.com/chechiachang/terraform-playground/merge_requests/26"
+    - name: git-commit-author     # Che Chia Chang
+
+  tasks:
+
+    - name: generic-git-clone
+      taskRef:
+        name: generic-git-clone
+      params:
+        - name: url
+          value: https://github.com/chechiachang/terraform-playground.git
+        - name: revision
+          value: "$(params.git-source-branch)"
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+
+    - name: terraform-plan
+      taskRef:
+        name: terraform-plan
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+      runAfter:
+        - generic-git-clone
+
+    - name: slack-send-message
+      taskRef:
+        name: slack-send-message
+      params:
+        - name: git-repo-name
+          value: "terraform-init"
+        - name: git-source-branch # "gitlab-integration-api-comment"
+          value: "$(params.git-source-branch)"
+        - name: git-merge-request-url
+          value: "$(params.git-merge-request-url)"
+        - name: git-commit-author
+          value: "$(params.git-commit-author)"
+        - name: terraform-plan-output
+          value: output.plan
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+      runAfter:
+        - terraform-plan

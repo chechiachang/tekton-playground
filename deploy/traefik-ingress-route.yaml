@@ -1,0 +1,33 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: ipwhitelist
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 34.35.36.37
+    ipStrategy:
+      depth: 1
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tekton-dashboard
+  namespace: tekton-pipelines
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`tekton.chechia.net`) && Path(`/webhook`)
+      kind: Rule
+      services:
+      - name: el-gitlab-listener
+        port: 8080
+    - match: Host(`tekton.chechia.net`)
+      kind: Rule
+      services:
+      - name: tekton-dashboard
+        port: 9097
+      # middlewares:
+      # - name: ipwhitelist
+    #tls: # tekton.chechia.net is resolved to a private ip.

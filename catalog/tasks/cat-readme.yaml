@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: cat-readme
+  namespace: tekton-pipelines
+spec:
+  resources:
+    inputs:
+      - name: git-repo
+        type: git
+    outputs:
+      - name: git-repo
+        type: git
+  steps:
+    - name: cat-readme
+      image: ubuntu
+      script: cat "$(resources.inputs.git-repo.path)/README.md"

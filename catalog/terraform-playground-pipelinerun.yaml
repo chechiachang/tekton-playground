@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: manual-terraform-infra-
+  namespace: tekton-pipelines
+spec:
+  pipelineRef:
+    name: terraform-infra
+  params:
+    - name: git-ref
+      value: "master"                                     # lastet commit on branch
+      # value: "refs/heads/master"                        # master & deploy
+      # value: "refs/tags/0.0.3"                          # tagged commit
+      # value: "0.0.3"                                    # tagged commit
+      # value: "54a22047d9f9871e8e8a6f43913f6d11bc018137" # commit
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+          resources:
+            requests:
+              storage: 500Mi
+              #storage: 1Gi

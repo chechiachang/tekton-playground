@@ -1,0 +1,8 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: tekton-cd-gcloud-
+  namespace: tekton-pipelines
+spec:
+  taskRef:
+    name: gcloud

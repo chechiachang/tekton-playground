@@ -1,0 +1,88 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: kubectl-apply-tekton
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: gcloud-image
+      description: gcloud CLI container image to run this task
+      default: google/cloud-sdk:292.0.0
+    - name: credential
+      description: credential file to run terraform
+      default: myproject-tekton-playground.json # tekton-playground
+  workspaces:
+    - name: git-repo
+      mountPath: /workspace/git-repo
+  steps:
+    - name: kubectl-apply-tekton
+      image: "$(params.gcloud-image)"
+      script: |
+        #!/usr/bin/env bash
+        set -xe
+        
+        export GCP_PROJECT=myproject
+        export GKE_NAME=its-tekton-k8s-tw-01
+        export GCP_LOCATION=asia-east1
+
+        gcloud auth activate-service-account tekton-admin@myproject.iam.gserviceaccount.com \
+          --key-file=/var/secret/$(params.credential) \
+          --project ${GCP_PROJECT}
+        gcloud container clusters get-credentials ${GKE_NAME} \
+          --zone ${GCP_LOCATION}
+
+        cd "$(workspaces.git-repo.path)"
+        declare -a directories=( "conditions" "pipelines" "tasks" "triggers")
+        for dir in ${directories[@]}; do
+          kubectl apply --filename catalog/${dir}
+        done
+      volumeMounts:
+        - name: &service-account-volume service-account-volume
+          mountPath: /var/secret
+  volumes:
+    - name: *service-account-volume
+      secret:
+        secretName: gcp-credentials
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kubectl-apply-tekton-dryrun
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: credential
+      description: credential file to run terraform
+      default: myproject-tekton-playground.json # tekton-playground
+  workspaces:
+    - name: git-repo
+      mountPath: /workspace/git-repo
+  steps:
+    - name: kubectl-apply-tekton-dryrun
+      image: google/cloud-sdk:292.0.0
+      script: |
+        #!/usr/bin/env bash
+        set -xe
+        
+        export GCP_PROJECT=myproject
+        export GKE_NAME=its-tekton-k8s-tw-01
+        export GCP_LOCATION=asia-east1
+
+        gcloud auth activate-service-account tekton-admin@myproject.iam.gserviceaccount.com \
+          --key-file=/var/secret/$(params.credential) \
+          --project ${GCP_PROJECT}
+        gcloud container clusters get-credentials ${GKE_NAME} \
+          --zone ${GCP_LOCATION}
+
+        cd "$(workspaces.git-repo.path)"
+        declare -a directories=( "conditions" "pipelines" "tasks" "triggers")
+        for dir in ${directories[@]}; do
+          kubectl apply --dry-run --filename catalog/${dir}
+        done
+      volumeMounts:
+        - name: &service-account-volume service-account-volume
+          mountPath: /var/secret
+  volumes:
+    - name: *service-account-volume
+      secret:
+        secretName: gcp-credentials

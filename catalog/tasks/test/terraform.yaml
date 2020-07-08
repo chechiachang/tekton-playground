@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: tekton-playground-terraform-
+  namespace: tekton-pipelines
+spec:
+  resources:
+    inputs:
+      - name: git-repo
+        resourceRef:
+          name: tekton-playground-git
+    outputs:
+      - name: git-repo
+        resourceRef:
+          name: tekton-playground-git
+  taskRef:
+    name: terraform-plan

@@ -1,0 +1,47 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: slack-send-message
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: git-repo-name
+    - name: git-source-branch
+    - name: git-merge-request-url
+    - name: git-commit-author
+    - name: terraform-plan-output
+      default: output.plan
+    - name: slack-url
+      default: https://hooks.slack.com/services/id-token
+  workspaces:
+    - name: git-repo
+      mountPath: /workspace/git-repo
+  steps:
+    - name: slack-send-message
+      image: alpine/git
+      script: |
+        #!/bin/sh
+        set -xe
+
+        env
+
+        apk update && apk add curl
+
+        function send_comment() {
+          cd "$(workspaces.git-repo.path)/${1}"
+
+          curl -s -w "${http_code}" -X POST --data-urlencode "payload={
+            \"channel\": \"#crazy\",
+            \"username\": \"Tekton CD\",
+            \"text\": \"Merge Request <$(params.git-merge-request-url)|#$(params.git-merge-request-url)> of $(params.git-repo-name)@$(params.git-source-branch) triggered by $(params.git-commit-author)\n ===output===\n $(cat $(params.terraform-plan-output))\"
+            }" https://hooks.slack.com/services/id-token
+
+            if [ $? -eq 0 ]; then
+              echo "Curl slack webhook responded 200 ok" && exit 0
+            else
+              echo "Curl slack webhook did not respond 200 ok" && exit 1
+            fi
+
+        }
+
+        send_comment "gcp/myproject"

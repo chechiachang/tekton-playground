@@ -1,0 +1,49 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: tekton-cd
+  namespace: tekton-pipelines
+spec:
+  workspaces:
+    - name: shared-workspace
+  params:
+    - name: git-ref
+
+  tasks:
+
+    - name: generic-git-clone
+      taskRef:
+        name: generic-git-clone
+      params:
+        - name: url
+          value: https://github.com/chechiachang/tekton-playground.git
+        - name: revision
+          value: "$(params.git-ref)"
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+
+    - name: kubectl-apply-tekton-dryrun
+      taskRef:
+        name: kubectl-apply-tekton-dryrun
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+      runAfter:
+        - generic-git-clone
+
+    - conditions:
+        - conditionRef: "is-equal" # Only apply if ref is master branch
+          params:
+            - name: variable
+              value: "$(params.git-ref)"
+            - name: compare
+              value: "refs/heads/master"
+      name: kubectl-apply-tekton
+      taskRef:
+        name: kubectl-apply-tekton
+      workspaces:
+        - name: git-repo
+          workspace: shared-workspace
+      runAfter:
+        - kubectl-apply-tekton-dryrun
